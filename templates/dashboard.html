@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Management Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Stock Management Dashboard</h1>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <section class="alerts">
+          {% for category, message in messages %}
+            <p class="flash {{ category }}">{{ message }}</p>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    <section class="stats-grid">
+      <article class="card"><h2>Total Products</h2><p>{{ stats.total_products }}</p></article>
+      <article class="card"><h2>Total Units</h2><p>{{ stats.total_units }}</p></article>
+      <article class="card"><h2>Inventory Value</h2><p>${{ '%.2f'|format(stats.inventory_value) }}</p></article>
+      <article class="card low"><h2>Low Stock Alerts</h2><p>{{ stats.low_stock_count or 0 }}</p></article>
+    </section>
+
+    <section class="card form-card">
+      <h2>Add Product</h2>
+      <form method="post" action="{{ url_for('create_product') }}" enctype="multipart/form-data" class="form-grid">
+        <label>
+          Product Name
+          <input type="text" name="name" required />
+        </label>
+        <label>
+          Quantity
+          <input type="number" min="0" name="quantity" required />
+        </label>
+        <label>
+          Price
+          <input type="number" min="0" step="0.01" name="price" required />
+        </label>
+        <label>
+          Low Stock Threshold
+          <input type="number" min="0" name="low_stock_threshold" value="5" required />
+        </label>
+        <label>
+          Product Photo
+          <input type="file" name="photo" accept="image/*" />
+        </label>
+        <button type="submit">Save Product</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Products</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Name</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Low Stock Threshold</th>
+              <th>Status</th>
+              <th>Update Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in products %}
+            <tr class="{% if product.is_low_stock %}low-row{% endif %}">
+              <td>
+                {% if product.photo_filename %}
+                  <img src="{{ url_for('uploaded_file', filename=product.photo_filename) }}" alt="{{ product.name }}" class="thumb" />
+                {% else %}
+                  <span class="placeholder">No photo</span>
+                {% endif %}
+              </td>
+              <td>{{ product.name }}</td>
+              <td>${{ '%.2f'|format(product.price) }}</td>
+              <td>{{ product.quantity }}</td>
+              <td>{{ product.low_stock_threshold }}</td>
+              <td>
+                {% if product.is_low_stock %}
+                  <span class="badge danger">Low stock</span>
+                {% else %}
+                  <span class="badge success">Healthy</span>
+                {% endif %}
+              </td>
+              <td>
+                <form method="post" action="{{ url_for('update_quantity', product_id=product.id) }}" class="inline-form">
+                  <input type="number" min="0" name="quantity" value="{{ product.quantity }}" required />
+                  <button type="submit">Update</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7">No products yet. Add your first item above.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
